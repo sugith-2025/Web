@@ -1,0 +1,581 @@
+ETHICAL HACKING & RECON TOOLS
+COMMAND REFERENCE (PLAIN DOCUMENT)
+================================================================
+
+This document lists, for each of the 16 tools, what the tool is used
+for and every command you are likely to need, with a short line
+explaining what each command does. Use this alongside the earlier
+"Beginner Guide" PDF for the scenario-matching explanations.
+
+Note: Only run these commands on your own lab systems or on systems
+you have written permission to test.
+
+================================================================
+1. KALI LINUX (VIRTUAL MACHINE)
+================================================================
+Use: Kali Linux is the operating system/lab you run almost every
+other tool on this list from. It comes pre-loaded with penetration
+testing tools so you do not have to install them one by one.
+
+Commands:
+
+sudo apt update
+  Refreshes the list of available software packages.
+
+sudo apt upgrade -y
+  Installs the latest updates for all installed tools.
+
+sudo apt install <tool-name>
+  Installs a specific tool that is missing, e.g. sudo apt install nmap
+
+uname -a
+  Shows kernel and system information, useful to confirm you are on Kali.
+
+ifconfig
+  or: ip a
+  Shows your VM's network interfaces and IP address.
+
+whoami
+  Shows which user you are logged in as.
+
+passwd
+  Changes your login password (do this after first boot).
+
+sudo apt install -y kali-linux-headless
+  Reinstalls the full default Kali toolset if something is missing.
+
+================================================================
+2. SYSMON (SYSTEM MONITOR)
+================================================================
+Use: Sysmon runs on Windows and logs detailed system activity
+(process creation, network connections, file changes) so a defender
+can investigate suspicious behaviour later. This is the only
+defensive/monitoring tool in the list; everything else here is used
+from the attacker's side.
+
+Commands (run in an elevated/Administrator Command Prompt or
+PowerShell on Windows):
+
+sysmon64.exe -accepteula -i
+  Installs Sysmon and accepts the license agreement (-i = install).
+
+sysmon64.exe -accepteula -i sysmonconfig.xml
+  Installs Sysmon using a custom configuration file (recommended,
+  e.g. the well-known "SwiftOnSecurity" config) so it logs the
+  right events and ignores noise.
+
+sysmon64.exe -c
+  Shows the current Sysmon configuration that is running.
+
+sysmon64.exe -c sysmonconfig.xml
+  Updates (changes) the running configuration to a new file.
+
+sysmon64.exe -u
+  Uninstalls Sysmon.
+
+Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational"
+  (PowerShell) Reads the Sysmon event log directly from the command
+  line instead of opening Event Viewer.
+
+To view logs with the mouse: open Event Viewer, then go to
+Applications and Services Logs > Microsoft > Windows > Sysmon >
+Operational. The most-asked Event IDs are:
+  Event ID 1  = a process was created
+  Event ID 3  = a network connection was made
+  Event ID 11 = a file was created
+
+================================================================
+3. THEHARVESTER
+================================================================
+Use: Passive OSINT tool that collects email addresses, employee
+names, subdomains, IP addresses and hosts belonging to a company,
+by querying public search engines and other public data sources.
+
+Commands:
+
+theHarvester -d example.com -b google
+  Searches Google for data about example.com (-d = domain,
+  -b = data source/search engine to use).
+
+theHarvester -d example.com -b bing
+  Same search but using Bing as the source.
+
+theHarvester -d example.com -b all
+  Searches every available public source at once.
+
+theHarvester -d example.com -b google -l 200
+  Limits results to 200 (-l = limit), useful for a quicker scan.
+
+theHarvester -d example.com -b google -f report.html
+  Saves the results into a report file (-f = output filename;
+  supports .html and .xml).
+
+theHarvester -d example.com -b shodan
+  Also pulls data from Shodan for the same domain.
+
+theHarvester -h
+  Shows the full help menu with all available options.
+
+================================================================
+4. NETDISCOVER
+================================================================
+Use: Finds live devices (their IP and MAC addresses) on the local
+network you are connected to, using ARP requests. Works only on
+the local network, not across the internet.
+
+Commands:
+
+sudo netdiscover
+  Starts an automatic scan of your local network range.
+
+sudo netdiscover -r 192.168.1.0/24
+  Scans a specific IP range that you choose (-r = range).
+
+sudo netdiscover -i eth0
+  Scans using a specific network interface (-i = interface),
+  useful if you have more than one network card.
+
+sudo netdiscover -p
+  Passive mode: only listens to ARP traffic instead of sending
+  requests, so it is harder to detect.
+
+sudo netdiscover -s 1
+  Sets the delay (in seconds) between ARP requests, to scan more
+  slowly and quietly.
+
+sudo netdiscover -l targets.txt
+  Scans a list of IP ranges stored in a text file (-l = list file).
+
+================================================================
+5. GOOGLE DORKING
+================================================================
+Use: Using special search operators inside the normal Google search
+box to find information that is not meant to be easy to find, such
+as exposed files, login pages, or open directories. No installation
+needed, just a browser.
+
+Operators/commands (type these into the Google search bar):
+
+site:example.com
+  Shows results only from the example.com website.
+
+filetype:pdf
+  Shows only PDF files (replace pdf with xlsx, docx, txt, etc.).
+
+site:example.com filetype:xlsx
+  Combines both: only Excel files from example.com.
+
+intitle:"index of"
+  Finds pages whose title contains "index of", which usually means
+  an open, browsable folder on a server.
+
+inurl:admin
+  Finds pages whose web address contains the word "admin", often
+  an admin login page.
+
+intext:"password"
+  Finds pages that contain the word "password" in their visible text.
+
+site:example.com inurl:login
+  Finds login pages that belong specifically to example.com.
+
+cache:example.com
+  Shows Google's stored/cached copy of a page.
+
+"error" site:example.com
+  Finds error messages on the target's pages, which can leak
+  technical details.
+
+================================================================
+6. FOCA
+================================================================
+Use: A Windows tool that finds public documents (PDF, Word, Excel,
+PowerPoint) belonging to a domain, downloads them, and reads the
+hidden metadata inside them (author names, software used, internal
+usernames, folder paths).
+
+Steps (FOCA is a GUI tool, used by clicking, not typed commands):
+
+1. Open FOCA and create a "New Project".
+2. Type in the target domain, e.g. example.com.
+3. Click "Search All" to let FOCA search search engines for public
+   files belonging to that domain.
+4. Select the files found, then click "Download All" to save them
+   locally.
+5. Right-click the downloaded files and choose "Extract All
+   Metadata".
+6. Open the "Metadata" tab to see extracted usernames, software,
+   printers, folders and emails.
+7. Use "Network" or "DNS" tabs inside FOCA to also see related
+   servers and subdomains it discovered along the way.
+
+================================================================
+7. WHOIS
+================================================================
+Use: Looks up the registration record of a domain or IP address:
+who owns it, which registrar it was bought through, when it was
+created, and when it expires.
+
+Commands:
+
+whois example.com
+  Shows the full registration record for the domain example.com.
+
+whois 8.8.8.8
+  Works the same way for an IP address instead of a domain name.
+
+whois -h whois.arin.net 8.8.8.8
+  Queries a specific WHOIS server (-h = host) directly, useful when
+  the default server does not have the record.
+
+whois example.com | grep -i "creation date"
+  Filters the output to show only the line with the creation date
+  (grep searches for matching text).
+
+whois example.com | grep -i "registrar"
+  Filters the output to show only the registrar's name.
+
+================================================================
+8. NSLOOKUP
+================================================================
+Use: Queries DNS servers to translate a domain name into an IP
+address, and to look up other DNS record types such as mail
+servers and name servers.
+
+Commands:
+
+nslookup example.com
+  Returns the IP address(es) for example.com.
+
+nslookup -type=mx example.com
+  Returns the mail servers (MX records) for the domain.
+
+nslookup -type=ns example.com
+  Returns the name servers (NS records) for the domain.
+
+nslookup -type=a example.com
+  Returns only the IPv4 address (A record).
+
+nslookup -type=aaaa example.com
+  Returns the IPv6 address (AAAA record).
+
+nslookup -type=txt example.com
+  Returns TXT records, which often hold verification or security
+  settings (like SPF for email).
+
+nslookup -type=any example.com
+  Returns every DNS record type available for the domain.
+
+nslookup 8.8.8.8
+  Reverse lookup: finds the domain name linked to an IP address.
+
+nslookup example.com 8.8.8.8
+  Looks up example.com using a specific DNS server (8.8.8.8 is
+  Google's public DNS server) instead of the default one.
+
+================================================================
+9. SUBLIST3R
+================================================================
+Use: Finds the subdomains of a target domain (such as mail.example
+.com or dev.example.com) by checking search engines and other
+public sources.
+
+Commands:
+
+sublist3r -d example.com
+  Finds and lists all subdomains of example.com (-d = domain).
+
+sublist3r -d example.com -v
+  Runs the scan in verbose mode, showing progress as it searches
+  (-v = verbose).
+
+sublist3r -d example.com -o results.txt
+  Saves the list of subdomains into a text file (-o = output file).
+
+sublist3r -d example.com -b
+  Also uses brute-forcing to guess additional common subdomain
+  names (-b = brute-force).
+
+sublist3r -d example.com -p 80,443
+  Checks which of the found subdomains have ports 80 and 443 open
+  (-p = ports).
+
+sublist3r -d example.com -e google,bing,yahoo
+  Chooses specific search engines to search with (-e = engines).
+
+================================================================
+10. MALTEGO
+================================================================
+Use: A graphical link-analysis tool. You start with one piece of
+information (an "entity" such as a domain, email, or person) and
+run automatic searches called "transforms" to build a visual graph
+that shows how people, companies, domains, emails and IP addresses
+are connected to each other.
+
+Steps (Maltego is a GUI tool used by clicking, not typed commands):
+
+1. Open Maltego and log in (the free Community Edition needs a
+   free account).
+2. Create a "New Graph".
+3. Drag an entity onto the canvas, for example a "Domain" entity,
+   and type in the target domain name.
+4. Right-click the entity and choose "Run Transform", then pick a
+   transform such as "To DNS Name", "To Email addresses" or "To IP
+   address".
+5. Maltego automatically adds the new results as connected nodes
+   on the graph.
+6. Repeat running transforms on the new nodes to keep expanding the
+   map of relationships.
+7. Use the "Organize" or "Layout" options to arrange the graph so
+   it is easy to read for a report.
+
+================================================================
+11. SHODAN
+================================================================
+Use: A search engine for internet-connected devices (servers,
+webcams, routers, industrial systems) instead of websites. Shows
+open ports, software banners, and location for devices it has
+already scanned, so you see exposure without scanning the target
+yourself.
+
+Search filters/commands (type these into the search box at
+shodan.io, or use shodan.io after creating a free account):
+
+apache
+  Finds devices that are running the Apache web server software.
+
+port:22
+  Finds devices with port 22 (SSH) open.
+
+country:IN
+  Limits results to devices located in India (use any country code).
+
+org:"Company Name"
+  Finds devices that belong to a specific organisation.
+
+product:"nginx"
+  Finds devices running a specific software product.
+
+hostname:example.com
+  Finds devices whose hostname matches example.com.
+
+net:192.168.1.0/24
+  Finds devices within a specific IP range (net = network).
+
+Combined example: apache country:IN port:80
+  Finds devices in India, running Apache, with port 80 open.
+
+Command-line version (if the "shodan" CLI tool is installed):
+
+shodan init <your-api-key>
+  Connects the command-line tool to your Shodan account.
+
+shodan host 8.8.8.8
+  Shows all known information about a specific IP address.
+
+shodan search apache country:IN
+  Runs a Shodan search directly from the terminal.
+
+================================================================
+12. NMAP (NETWORK MAPPER)
+================================================================
+Use: Actively scans a target to find which hosts are alive, which
+ports are open, what services and versions are running on those
+ports, and often the operating system in use.
+
+Commands:
+
+nmap 192.168.1.10
+  Basic scan: checks the most common 1000 ports on the target.
+
+nmap -sn 192.168.1.0/24
+  Ping scan only: finds which hosts in the range are alive, without
+  scanning their ports (-sn = no port scan).
+
+nmap -p 80,443 192.168.1.10
+  Scans only the specific ports listed (-p = ports).
+
+nmap -p- 192.168.1.10
+  Scans all 65535 ports instead of just the common ones.
+
+nmap -sV 192.168.1.10
+  Detects the service and version running on each open port
+  (-sV = version detection).
+
+nmap -O 192.168.1.10
+  Tries to detect the target's operating system (-O = OS detection).
+
+nmap -A 192.168.1.10
+  Aggressive scan: combines OS detection, version detection, script
+  scanning and traceroute all at once (-A = aggressive).
+
+nmap -sS 192.168.1.10
+  Performs a stealthy "SYN scan" that is quieter than a full
+  connection scan (-sS = stealth/SYN scan).
+
+nmap -T4 192.168.1.10
+  Runs the scan faster (-T4 = timing template 4, aggressive speed).
+
+nmap --script vuln 192.168.1.10
+  Runs Nmap's built-in vulnerability-detection scripts against the
+  target.
+
+nmap -oN results.txt 192.168.1.10
+  Saves the scan output into a text file (-oN = normal output file).
+
+================================================================
+13. NESSUS
+================================================================
+Use: Scans systems against a large database of known
+vulnerabilities (missing patches, weak configurations, default
+passwords) and produces a report with each finding rated by
+severity (Critical, High, Medium, Low, Info).
+
+Steps (Nessus is mostly used through its web interface, not typed
+commands):
+
+1. Start the Nessus service, e.g.:
+   sudo systemctl start nessusd
+2. Open a browser and go to: https://localhost:8834
+3. Log in with the account you created during setup.
+4. Click "New Scan" and choose a template, e.g. "Basic Network
+   Scan" or "Advanced Scan".
+5. Enter the target's IP address or address range in the "Targets"
+   field.
+6. Click "Save", then click the scan and press "Launch" to start it.
+7. Once finished, open the scan results and sort findings by
+   severity.
+8. Click "Export" to generate a PDF/HTML/CSV report you can share.
+
+Useful service commands (Linux terminal):
+
+sudo systemctl status nessusd
+  Checks whether the Nessus service is currently running.
+
+sudo systemctl stop nessusd
+  Stops the Nessus service.
+
+sudo systemctl enable nessusd
+  Makes Nessus start automatically every time the system boots.
+
+================================================================
+14. WIRESHARK
+================================================================
+Use: Captures and displays network traffic in detail (packet by
+packet), letting you see which protocols are being used and
+whether any data, including passwords, is being sent in plain,
+unencrypted text.
+
+Steps/filters (Wireshark is a GUI tool; the items below are typed
+into its "Display filter" bar after you start a capture):
+
+1. Open Wireshark and double-click the network interface you want
+   to capture on (e.g. eth0 or Wi-Fi) to start capturing.
+2. Click the red square button to stop the capture when you have
+   enough traffic.
+
+Display filters (type these into the filter bar and press Enter):
+
+http
+  Shows only HTTP (unencrypted web) traffic.
+
+dns
+  Shows only DNS lookup traffic.
+
+ip.addr == 192.168.1.5
+  Shows only traffic to or from a specific IP address.
+
+tcp.port == 80
+  Shows only traffic on a specific TCP port.
+
+http.request
+  Shows only HTTP request packets (pages being asked for).
+
+ftp
+  Shows only FTP traffic, which often carries plain-text logins.
+
+Right-click a packet, choose "Follow", then "TCP Stream"
+  Rebuilds and displays the full conversation for that connection,
+  which is how usernames and passwords in plain-text protocols are
+  found.
+
+File > Export Objects > HTTP
+  Extracts files (such as images or documents) that were
+  transferred over HTTP during the capture.
+
+Command-line version (tshark, Wireshark's terminal tool):
+
+tshark -i eth0
+  Captures live traffic on interface eth0 and prints it to the
+  terminal.
+
+tshark -i eth0 -f "port 80"
+  Captures only traffic on port 80 (-f = capture filter).
+
+tshark -r capture.pcap
+  Reads and displays a previously saved capture file (-r = read).
+
+================================================================
+15. ROBTEX
+================================================================
+Use: A free website for DNS and IP research. Type in a domain or IP
+and it shows the related name servers, mail servers, reverse DNS,
+the network owner (ASN), and other domains that share the same IP
+address or name server.
+
+Steps (Robtex is a website, not typed commands):
+
+1. Go to robtex.com in your browser.
+2. Type the domain name or IP address into the search box and
+   press Enter.
+3. Open the "DNS" tab to see the domain's DNS records.
+4. Open the "Shared" tab to see other domains hosted on the same
+   IP address or using the same name server.
+5. Open the "Graph" tab to see a visual map of the domain's network
+   relationships.
+
+================================================================
+16. ARMITAGE
+================================================================
+Use: A graphical front-end for the Metasploit exploitation
+framework. It shows the network as a picture of computers, lets you
+scan them, matches known exploits to the vulnerabilities it finds,
+and launches an attack with a few clicks instead of typing long
+commands. Used in the exploitation phase, after a vulnerability has
+already been found.
+
+Commands/steps:
+
+sudo systemctl start postgresql
+  Starts the database service that Metasploit/Armitage needs.
+
+sudo msfdb init
+  Initialises the Metasploit database (only needed the first time).
+
+armitage
+  Launches Armitage (connect to the local Metasploit instance when
+  prompted).
+
+Inside Armitage (menu actions, not typed commands):
+
+Hosts > Nmap Scan > Quick Scan (OS detect)
+  Runs an Nmap scan from inside Armitage to discover hosts and
+  their operating systems.
+
+Right-click a host > Services
+  Shows the open ports/services Armitage found on that host.
+
+Attacks > Find Attacks
+  Armitage automatically matches available exploits to the
+  vulnerabilities/services it detected on each host.
+
+Right-click a host > Attack > (choose exploit) > Launch
+  Launches the chosen exploit against the selected host.
+
+Right-click a compromised host > Meterpreter > Interact
+  Opens an interactive session on a host that has been
+  successfully exploited.
+
+================================================================
+END OF DOCUMENT
+================================================================
